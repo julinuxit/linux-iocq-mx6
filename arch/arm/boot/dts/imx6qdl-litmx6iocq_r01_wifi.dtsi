@@ -1,0 +1,102 @@
+/*
+ * Copyright (C) 2017 LinuxIT, Inc.
+ * Copyright (C) 2016 Freescale Semiconductor, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+&iomuxc {
+	imx6dqscm-murata-v2 {
+		pinctrl_reg_wlan_en: reg-wlan-engrp {
+			fsl,pins = <
+			#define GP_REG_WLAN_EN	<&gpio6 15 GPIO_ACTIVE_HIGH>
+			MX6QDL_PAD_NANDF_CS2__GPIO6_IO15	0x030b0
+			>;
+		};
+
+		pinctrl_wl1271: wl1271grp {
+			fsl,pins = <
+			#define GPIRQ_WL1271	<&gpio6 14 IRQ_TYPE_LEVEL_HIGH>
+			MX6QDL_PAD_NANDF_CS1__GPIO6_IO14	0x100b0		/* wl12xx_wl_irq */
+			>;
+		};
+
+		pinctrl_bt_rfkill: bt-rfkillgrp {
+			fsl,pins = <
+			#define GP_BT_RFKILL_RESET	<&gpio6 16 GPIO_ACTIVE_LOW>
+			MX6QDL_PAD_NANDF_CS3__GPIO6_IO16	0x000b0
+			>;
+		};
+
+		pinctrl_usdhc4: usdhc4grp {
+			fsl,pins = <
+				MX6QDL_PAD_SD4_CMD__SD4_CMD		0x17069	
+				MX6QDL_PAD_SD4_CLK__SD4_CLK		0x17069
+				MX6QDL_PAD_SD4_DAT0__SD4_DATA0	0x17069
+				MX6QDL_PAD_SD4_DAT1__SD4_DATA1	0x17069
+				MX6QDL_PAD_SD4_DAT2__SD4_DATA2	0x17069
+				MX6QDL_PAD_SD4_DAT3__SD4_DATA3	0x17069
+			>;
+		};
+	};
+};
+
+/ {
+
+
+	regulators {
+		reg_wlan_en: regulator@4 {
+			compatible = "regulator-fixed";
+			reg = <4>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_reg_wlan_en>;
+			regulator-name = "wlan-en";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = GP_REG_WLAN_EN;
+			startup-delay-us = <70000>;
+			enable-active-high;
+		};
+	};
+
+	wl1271_sdio {
+		compatible = "ti,wilink6";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wl1271>;
+		interrupts-extended = GPIRQ_WL1271; 
+		clocks = <&refclock>;
+		clock-names = "refclock";
+
+		refclock: refclock {
+			compatible = "ti,wilink-clock";
+			#clock-cells = <0>;
+			clock-frequency = <38400000>;
+		};
+	};
+
+	bt_rfkill {
+		compatible = "net,rfkill-gpio";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_bt_rfkill>;
+		name = "bt_rfkill";
+		type = <2>;     /* bluetooth */
+		bt_rfkill_reset-gpios = GP_BT_RFKILL_RESET;
+	};
+}; 
+
+&usdhc4 {	/* uSDHC4, TiWi wl1271 */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc4>;
+	bus-width = <4>;
+	non-removable;
+	vmmc-supply = <&reg_wlan_en>;
+	vqmmc-1-8-v;
+	cap-power-off-card;
+	keep-power-in-suspend;
+	status = "okay";
+};
+
+
+
